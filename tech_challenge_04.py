@@ -176,7 +176,7 @@ def detect_face_and_activities(video_path, output_video_path, output_text_path):
     cv2.destroyAllWindows()
 
 def analyse_video(video_path):
-    detect_face_and_activities(video_path, './output_video.mp4')
+    detect_face_and_activities(video_path, './output_video.mp4', './output_text.txt')
 
 if __name__ == "__main__":
     analyse_video('./Unlocking Facial Recognition_ Diverse Activities Analysis.mp4')
