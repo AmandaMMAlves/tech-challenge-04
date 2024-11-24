@@ -28,17 +28,17 @@ def calculate_angle(a, b, c):
     angle = np.arccos(np.clip(cosine_angle, -1.0, 1.0))
     return np.degrees(angle)
 
-def categorize_activities(pose_landmarks):
+def categorize_activities(pose_landmarks, mp_pose):
     if not pose_landmarks:
         return "Indefinido"
 
     # Extraindo coordenadas importantes
-    left_wrist = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.LEFT_WRIST]
-    right_wrist = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.RIGHT_WRIST]
-    left_elbow = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.LEFT_ELBOW]
-    right_elbow = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.RIGHT_ELBOW]
-    left_shoulder = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER]
-    right_shoulder = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER]
+    left_wrist = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
+    right_wrist = pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_WRIST]
+    left_elbow = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
+    right_elbow = pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
+    left_shoulder = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
+    right_shoulder = pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
 
     # Calcular ângulos
     angle_left_elbow = calculate_angle(
@@ -67,15 +67,15 @@ def categorize_activities(pose_landmarks):
         return "Dançando"
     
     # Cálculos básicos de ângulos ou posições
-    left_knee = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.LEFT_KNEE]
-    right_knee = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.RIGHT_KNEE]
-    left_hip = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.LEFT_HIP]
-    right_hip = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.RIGHT_HIP]
+    left_knee = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_KNEE]
+    right_knee = pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_KNEE]
+    left_hip = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP]
+    right_hip = pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
 
-    left_eye = pose_landmarks.landmarks[mp_pose.PoseLandmark.LEFT_EYE.value]
-    right_eye = pose_landmarks.landmarks[mp_pose.PoseLandmark.RIGHT_EYE.value]
-    left_elbow = pose_landmarks.landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value]
-    right_elbow = pose_landmarks.landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value]
+    left_eye = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_EYE.value]
+    right_eye = pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_EYE.value]
+    left_elbow = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW.value]
+    right_elbow = pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW.value]
 
     left_arm_up = left_elbow.y < left_eye.y
     right_arm_up = right_elbow.y < right_eye.y
@@ -87,33 +87,6 @@ def categorize_activities(pose_landmarks):
         return "Acenando"
     else:
         return "Indefinido"
-
-
-def categorize_activity(pose_landmarks):
-    if not pose_landmarks:
-        return "Indefinido"
-    
-    # Cálculos básicos de ângulos ou posições
-    left_knee = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.LEFT_KNEE]
-    right_knee = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.RIGHT_KNEE]
-    left_hip = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.LEFT_HIP]
-    right_hip = pose_landmarks.landmark[mp.solutions.pose.PoseLandmark.RIGHT_HIP]
-
-    left_eye = pose_landmarks.landmarks[mp_pose.PoseLandmark.LEFT_EYE.value]
-    right_eye = pose_landmarks.landmarks[mp_pose.PoseLandmark.RIGHT_EYE.value]
-    left_elbow = pose_landmarks.landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value]
-    right_elbow = pose_landmarks.landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value]
-
-    left_arm_up = left_elbow.y < left_eye.y
-    right_arm_up = right_elbow.y < right_eye.y
-
-    # Exemplos básicos de categorizações
-    if left_knee.y > left_hip.y and right_knee.y > right_hip.y:
-        return "Sentado"
-    elif left_arm_up or right_arm_up:
-        return "Acenando"
-    else:
-        return "De pé ou outra ação"
 
 def detect_face_and_activities(video_path, output_video_path, output_text_path):
     cap = cv2.VideoCapture(video_path)
@@ -126,11 +99,11 @@ def detect_face_and_activities(video_path, output_video_path, output_text_path):
     out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
 
     emotion_color_map = {
-        'Feliz': (0, 255, 0),
-        'Triste': (255, 0, 0),
-        'Raiva': (0, 0, 255),
-        'Surpreso': (255, 255, 0),
-        'Neutro': (255, 255, 255)
+        'happy': (0, 255, 0),
+        'sad': (255, 0, 0),
+        'angry': (0, 0, 255),
+        'surprise': (255, 255, 0),
+        'neutral': (255, 255, 255)
     }
 
     mp_pose = mp.solutions.pose
@@ -157,15 +130,15 @@ def detect_face_and_activities(video_path, output_video_path, output_text_path):
         # Detectar atividades com base na pose
         activity = "Indefinido"
         if results.pose_landmarks:
-            activity = categorize_activity(results.pose_landmarks)
+            activity = categorize_activities(results.pose_landmarks, mp_pose)
             mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
         # Adicionar texto de atividade detectada
         cv2.putText(frame, f"Atividade: {activity}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
 
         # Salva a transcrição em um arquivo de texto
-        with open(output_text_path, 'w', encoding='utf-8') as file:
-            text = "Frame " + _ + ": \n" + "Emoção reconhecida: " + emotion + "\n Atividade Reconhecida: " + activity + "\n"
+        with open(output_text_path, 'a', encoding='utf-8') as file:
+            text = "Frame " + str(_) + ": \n" + "Emoção reconhecida: " + emotion + "\n Atividade Reconhecida: " + activity + "\n"
             file.write(text)    
 
         # Escrever frame processado
