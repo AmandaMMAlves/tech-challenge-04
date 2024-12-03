@@ -110,7 +110,9 @@ def detect_face_and_activities(video_path, output_video_path, output_text_path):
     pose = mp_pose.Pose()
     mp_drawing = mp.solutions.drawing_utils
 
-    for _ in tqdm(range(total_frames), desc="Processando emoções e atividades humanas em vídeo"):
+    anomaly_count = 0  # Variável para contar anomalias detectadas
+
+    for frame_idx in tqdm(range(total_frames), desc="Processando emoções e atividades humanas em vídeo"):
         ret, frame = cap.read()
         if not ret:
             break
@@ -133,13 +135,17 @@ def detect_face_and_activities(video_path, output_video_path, output_text_path):
             activity = categorize_activities(results.pose_landmarks, mp_pose)
             mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
+        # Verificar anomalias (considerar "Indefinido" como uma anomalia)
+        if activity == "Indefinido":
+            anomaly_count += 1
+
         # Adicionar texto de atividade detectada
         cv2.putText(frame, f"Atividade: {activity}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
 
-        # Salva a transcrição em um arquivo de texto
+        # Salvar informações do frame no arquivo de texto
         with open(output_text_path, 'a', encoding='utf-8') as file:
-            text = "Frame " + str(_) + ": \n" + "Emoção reconhecida: " + emotion + "\n Atividade Reconhecida: " + activity + "\n"
-            file.write(text)    
+            text = f"Frame {frame_idx + 1}: \nEmoção reconhecida: {emotion}\nAtividade Reconhecida: {activity}\n\n"
+            file.write(text)
 
         # Escrever frame processado
         out.write(frame)
@@ -148,9 +154,12 @@ def detect_face_and_activities(video_path, output_video_path, output_text_path):
     out.release()
     cv2.destroyAllWindows()
 
+    # Escrever resumo final no arquivo de texto
+    with open(output_text_path, 'a', encoding='utf-8') as file:
+        file.write(f"\nResumo do vídeo:\nTotal de frames: {total_frames}\nAnomalias detectadas: {anomaly_count}\n")
+
 def analyse_video(video_path):
     detect_face_and_activities(video_path, './output_video.mp4', './output_text.txt')
 
 if __name__ == "__main__":
     analyse_video('./Unlocking Facial Recognition_ Diverse Activities Analysis.mp4')
-
